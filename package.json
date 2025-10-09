@@ -1,0 +1,86 @@
+{
+  "name": "AW-5-UI",
+  "version": "1.0.0",
+  "private": true,
+  "description": "React + Electron desktop application",
+  "author": "Air Worker",
+  "license": "MIT",
+  "main": "public/electron.js",
+
+  "scripts": {
+    "react-start": "set BROWSER=none && set NODE_ENV=development && react-scripts start",
+    "electron-start": "wait-on http://localhost:3000 && electron .",
+    "start": "concurrently \"npm run react-start\" \"npm run electron-start\"",
+    "prebuild": "react-scripts build",
+    "build": "npm run prebuild && electron-builder",
+    "package": "npm run prebuild && electron-builder --dir",
+    "dist": "npm run prebuild && electron-builder --win --x64"
+  },
+
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-scripts": "5.0.1",
+    "web-vitals": "^2.1.4",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^13.5.0"
+  },
+
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "electron": "^38.2.2",
+    "electron-builder": "^26.0.12",
+    "wait-on": "^9.0.1"
+  },
+
+  "eslintConfig": {
+    "extends": ["react-app", "react-app/jest"]
+  },
+
+  "browserslist": {
+    "production": [">0.2%", "not dead", "not op_mini all"],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+
+  "build": {
+    "appId": "com.airworker.myapps",
+    "productName": "MyApps",
+    "files": ["build/**/*", "public/electron.js"],
+    "directories": {
+      "buildResources": "assets"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        "portable"
+      ],
+      "icon": "public/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MyApps"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "public/icon.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "public/icon.png"
+    }
+  }
+}
