@@ -1,10 +1,11 @@
 
 import Home from "./Home/Home";
+import  './App.css'
 import GetAllImages from "./GetAllImages/GetAllImages";
 
 export default function App() {
-    return (<>
-        <Home/>
+    return (<div className='bg'>
+        {/*<Home/>*/}
 
         <GetAllImages
             baseUrl="http://192.168.27.34:8000"
@@ -16,6 +17,6 @@ export default function App() {
             }}
         />
 
-    </>)
+    </div>)
 
 }
