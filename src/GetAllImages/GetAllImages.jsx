@@ -73,9 +73,33 @@ export default function GetAllImages({
         }
     };
 
-    // ==============================================================
-    //                       RENDER
-    // ==============================================================
+    // -------------------- download single image --------------------
+    const downloadOne = async (img) => {
+        try {
+            if (window.electronAPI?.saveImage) {
+                await window.electronAPI.saveImage(img.url, img.name);
+            } else {
+                // fallback для браузера
+                const res = await fetch(img.url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const blob = await res.blob();
+                const href = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = href;
+                a.download = img.name;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(href);
+            }
+        } catch (e) {
+            alert(`❌ ${e.message}`);
+        }
+    };
+
+    // ============================================================== //
+    //                       RENDER                                   //
+    // ============================================================== //
 
     // ---------- если открыт конкретный folder ----------
     if (currentFolder) {
@@ -98,16 +122,15 @@ export default function GetAllImages({
 
                 <div className={s.gridPhotos}>
                     {images.map((img) => (
-                        <a
-                            key={img.url}
-                            href={img.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={s.photoItem}
-                        >
-                            <img src={img.url} alt={img.name} />
+                        <div key={img.url} className={s.photoItem}>
+                            <a href={img.url} target="_blank" rel="noreferrer">
+                                <img src={img.url} alt={img.name} className={s.photoThumb} />
+                            </a>
                             <div className={s.photoName}>{img.name}</div>
-                        </a>
+                            <button className={s.downloadBtn} onClick={() => downloadOne(img)}>
+                                Download
+                            </button>
+                        </div>
                     ))}
                     {!loading && !err && images.length === 0 && (
                         <div className={s.empty}>No images in this folder</div>

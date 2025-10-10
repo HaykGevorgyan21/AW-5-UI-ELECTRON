@@ -6,15 +6,16 @@
   "author": "Air Worker",
   "license": "MIT",
   "main": "electron/main.js",
+  "homepage": ".",
   "scripts": {
     "react:start": "react-scripts start",
     "electron:start": "wait-on http://localhost:3000 && electron ./electron/main.js",
     "dev": "concurrently -k -n react,electron -c green,cyan \"npm:react:start\" \"npm:electron:start\"",
-    "build": "react-scripts build && electron-builder",
-    "package": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder --win --x64"
+    "build:react": "react-scripts build",
+    "build": "npm run build:react",
+    "package": "npm run build:react && electron-builder --dir",
+    "dist": "npm run build:react && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false WIN_CSC_LINK= WIN_CSC_KEY_PASSWORD= electron-builder --win --x64"
   },
-
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -23,7 +24,6 @@
     "cheerio": "^1.1.2",
     "exiftool-vendored": "^31.1.0",
     "jszip": "^3.10.1",
-    "node": "^24.10.0",
     "node-fetch": "^2.7.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -36,29 +36,20 @@
     "cross-env": "^10.1.0",
     "electron": "^30",
     "electron-builder": "^26.0.12",
-    "wait-on": "^7.2.0"
+    "wait-on": "^7.2.0",
+    "eslint-plugin-react-hooks": "^4.6.0"
   },
   "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
+    "extends": ["react-app", "react-app/jest"]
   },
   "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "production": [">0.2%", "not dead", "not op_mini all"],
+    "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
   },
   "build": {
     "appId": "com.airworker.myapps",
     "productName": "MyApps",
+    "asar": true,
     "files": [
       "build/**/*",
       "electron/**/*"
@@ -68,12 +59,7 @@
     },
     "win": {
       "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
+        { "target": "nsis", "arch": ["x64"] },
         "portable"
       ],
       "icon": "public/icon.png"
