@@ -2,7 +2,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const fetch = require('node-fetch'); // v2 (commonjs)
+const fetch = require('node-fetch');            // v2 (commonjs)
 const JSZip = require('jszip');
 const cheerio = require('cheerio');
 const { exiftool } = require('exiftool-vendored');
@@ -10,6 +10,7 @@ const { exiftool } = require('exiftool-vendored');
 const isDev = !app.isPackaged;
 let win;
 
+// ---------- Window ----------
 function createWindow() {
     win = new BrowserWindow({
         width: 1200,
@@ -42,8 +43,9 @@ function createWindow() {
 app.setAppLogsPath();
 
 const gotLock = app.requestSingleInstanceLock();
-if (!gotLock) app.quit();
-else {
+if (!gotLock) {
+    app.quit();
+} else {
     app.on('second-instance', () => {
         if (win) {
             if (win.isMinimized()) win.restore();
@@ -60,19 +62,7 @@ app.on('activate', () => {
 process.on('uncaughtException', (e) => console.error('uncaughtException', e));
 process.on('unhandledRejection', (e) => console.error('unhandledRejection', e));
 
-/* ------------- IPC / бизнес-логика ------------- */
-
-// диалог выбора ZIP
-ipcMain.handle('pick-zip-path', async (_evt, suggested = 'photo_package.zip') => {
-    const { canceled, filePath } = await dialog.showSaveDialog({
-        title: 'Save ZIP',
-        defaultPath: suggested,
-        filters: [{ name: 'ZIP Archive', extensions: ['zip'] }]
-    });
-    return canceled ? null : filePath;
-});
-
-// обработка одной картинки
+// ---------- Helpers ----------
 async function processImageToZip(zip, url) {
     const fileName = decodeURIComponent(url.split('/').pop());
     const res = await fetch(url);
@@ -119,7 +109,16 @@ async function processImageToZip(zip, url) {
     zip.file(txtName, lines.join('\n'));
 }
 
-// zip одной картинки
+// ---------- IPC ----------
+ipcMain.handle('pick-zip-path', async (_evt, suggested = 'photo_package.zip') => {
+    const { canceled, filePath } = await dialog.showSaveDialog({
+        title: 'Save ZIP',
+        defaultPath: suggested,
+        filters: [{ name: 'ZIP Archive', extensions: ['zip'] }]
+    });
+    return canceled ? null : filePath;
+});
+
 ipcMain.handle('make-zip-one', async (_evt, { url, zipPath }) => {
     const zip = new JSZip();
     await processImageToZip(zip, url);
@@ -128,7 +127,6 @@ ipcMain.handle('make-zip-one', async (_evt, { url, zipPath }) => {
     return { ok: true, zipPath };
 });
 
-// zip всех картинок в каталоге
 ipcMain.handle('make-zip-all', async (_evt, { folderUrl, zipPath }) => {
     const res = await fetch(folderUrl);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -155,7 +153,6 @@ ipcMain.handle('make-zip-all', async (_evt, { folderUrl, zipPath }) => {
     return { ok: true, count: urls.length, zipPath };
 });
 
-// список папок
 ipcMain.handle('list-folders', async (_evt, baseUrl) => {
     const url = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
     const res = await fetch(url);
@@ -166,7 +163,8 @@ ipcMain.handle('list-folders', async (_evt, baseUrl) => {
     const folders = [];
     $('a[href]').each((_, a) => {
         const href = $(a).attr('href') || '';
-        if (href.endsWith('/')) {
+        // только дочерние каталоги в листинге
+        if (href.endsWith('/') && !href.startsWith('../')) {
             folders.push({
                 name: decodeURIComponent(href.replace(/\/$/, '')),
                 url: new URL(href, url).toString()
@@ -178,7 +176,6 @@ ipcMain.handle('list-folders', async (_evt, baseUrl) => {
     return folders;
 });
 
-// список картинок
 ipcMain.handle('list-images', async (_evt, folderUrl) => {
     const url = folderUrl.endsWith('/') ? folderUrl : folderUrl + '/';
     const res = await fetch(url);
@@ -203,7 +200,52 @@ ipcMain.handle('list-images', async (_evt, folderUrl) => {
     return images;
 });
 
-// выход
+// --- NEW: Delete folders on remote server via HTTP DELETE ---
+ipcMain.handle('delete-folders-remote', async (_evt, { urls, headers = {} } = {}) => {
+    if (!Array.isArray(urls) || urls.length === 0) {
+        return { ok: false, error: 'No URLs provided' };
+    }
+
+    const results = [];
+    for (const raw of urls) {
+        try {
+            const u = String(raw);
+            const url = u.endsWith('/') ? u : (u + '/');  // обычно папка с завершающим слэшем
+            const res = await fetch(url, {
+                method: 'DELETE',
+                headers: { 'X-Requested-By': 'AW-5-UI', ...headers },
+            });
+            if (!res.ok) {
+                const text = await res.text().catch(() => '');
+                results.push({ url, ok: false, status: res.status, body: text });
+            } else {
+                results.push({ url, ok: true, status: res.status });
+            }
+        } catch (e) {
+            results.push({ url: raw, ok: false, error: String(e?.message || e) });
+        }
+    }
+
+    return { ok: results.every(r => r.ok), results };
+});
+
+// --- OPTIONAL: save single image (renderer fallback uses this if exists) ---
+ipcMain.handle('save-image', async (_evt, { url, suggestedName }) => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const buf = await res.buffer();
+
+    const { canceled, filePath } = await dialog.showSaveDialog({
+        title: 'Save image',
+        defaultPath: suggestedName || path.basename(new URL(url).pathname)
+    });
+    if (canceled || !filePath) return { ok: false };
+
+    fs.writeFileSync(filePath, buf);
+    return { ok: true, filePath };
+});
+
+// ---------- Quit ----------
 app.on('window-all-closed', async () => {
     try { await exiftool.end(); } catch {}
     if (process.platform !== 'darwin') app.quit();
