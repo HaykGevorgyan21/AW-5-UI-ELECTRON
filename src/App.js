@@ -5,6 +5,7 @@ import GetAllImages from "./GetAllImages/GetAllImages";
 // import FolderList from "./Components/FolderList";
 
 export default function App() {
+
     return (<div className='bg'>
         {/*<Home/>*/}
         {/*<FolderList baseUrl="http://192.168.27.34:8000" />*/}

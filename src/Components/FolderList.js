@@ -60,7 +60,7 @@ export default function FolderList({ baseUrl = 'http://192.168.27.34:8000' }) {
                 ))}
             </ul>
             <button disabled={busy || !allSelectedUrls.length} onClick={onDelete}>
-                {busy ? 'Удаляю…' : `Удалить (${allSelectedUrls.length})`}
+                {busy ? 'deleting..' : `delete (${allSelectedUrls.length})`}
             </button>
         </div>
     );

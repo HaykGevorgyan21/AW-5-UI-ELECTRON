@@ -191,7 +191,7 @@ export default function GetAllImages({
                                 onClick={deleteSelected}
                                 disabled={busyDelete}
                             >
-                                {busyDelete ? 'Удаляю…' : `Удалить (${allSelectedUrls.length})`}
+                                {busyDelete ? 'deleting..' : `delete (${allSelectedUrls.length})`}
                             </button>
                         )}
                     </div>
