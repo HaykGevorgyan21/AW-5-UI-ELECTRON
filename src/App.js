@@ -8,11 +8,11 @@ export default function App() {
 
     return (<div className='bg'>
         {/*<Home/>*/}
-        {/*<FolderList baseUrl="http://192.168.27.34:8000" />*/}
+        {/*<FolderList baseUrl="http://192.168.4.1:8000" />*/}
 
 
         <GetAllImages
-            baseUrl="http://192.168.27.34:8000"
+            baseUrl="http://192.168.4.1:8000"
             autoRefreshMs={0} // поставь 5000 для авто-обновления каждые 5s
             onOpen={(folder) => {
                 // здесь можно открыть папку в твоём уже существующем загрузчике

@@ -3,10 +3,10 @@ import s from './Home.module.scss';
 
 export default function Home() {
     const [photoUrl, setPhotoUrl] = useState(
-        'http://192.168.27.34:8080/09_October_2025_16-10/DSC01555.JPG'
+        'http://192.168.4.1:8080/09_October_2025_16-10/DSC01555.JPG'
     );
     const [folderUrl, setFolderUrl] = useState(
-        'http://192.168.27.34:8080/09_October_2025_16-10/'
+        'http://192.168.4.1:8080/09_October_2025_16-10/'
     );
     const [msg, setMsg] = useState('');
     const [showUrl, setShowUrl] = useState('');

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import s from './GetAllImages.module.scss';
 
 export default function GetAllImages({
-                                         baseUrl = 'http://192.168.27.34:8000',
+                                         baseUrl = 'http://192.168.4.1:8000',
                                          autoRefreshMs = 0, // 0 = без авто-обновления
                                      }) {
     const [folders, setFolders] = useState([]);
@@ -13,6 +13,11 @@ export default function GetAllImages({
     const [query, setQuery] = useState('');
     const [selected, setSelected] = useState({});
     const [busyDelete, setBusyDelete] = useState(false);
+
+    // общий индикатор ожидания диалога/сохранения/зипования
+    const [busy, setBusy] = useState({ active: false, text: '' });
+    const setBusyText = (text) => setBusy({ active: true, text });
+    const clearBusy = () => setBusy({ active: false, text: '' });
 
     const hasElectron = useMemo(() => !!(window && window.electronAPI?.listFolders), []);
 
@@ -67,30 +72,41 @@ export default function GetAllImages({
     // -------------------- zip download --------------------
     const downloadZip = async (folder) => {
         try {
+            setBusyText('Открываю диалог сохранения…');
             const zipPath = await window.electronAPI.pickZipPath(`${folder.name}.zip`);
-            if (!zipPath) return;
+            if (!zipPath) {
+                clearBusy();
+                // окно закрыли — просто выходим
+                return;
+            }
+            setBusyText('Собираю ZIP…');
             await window.electronAPI.makeZipAll({ folderUrl: folder.url, zipPath });
+            clearBusy();
             alert(`✅ Saved: ${zipPath}`);
         } catch (e) {
+            clearBusy();
             alert(`❌ ${e.message}`);
         }
     };
 
     // -------------------- delete selected --------------------
-    const allSelectedUrls = folders.filter(f => selected[f.url]).map(f => f.url);
+    const allSelectedUrls = folders.filter((f) => selected[f.url]).map((f) => f.url);
 
     const toggleSelect = (url) => {
-        setSelected(prev => ({ ...prev, [url]: !prev[url] }));
+        setSelected((prev) => ({ ...prev, [url]: !prev[url] }));
     };
 
     const deleteSelected = async () => {
         if (!allSelectedUrls.length) return;
         if (!window.confirm(`Удалить ${allSelectedUrls.length} выбранных папок?`)) return;
         setBusyDelete(true);
+        setBusyText('Удаляю выбранные папки…');
         try {
             const res = await window.electronAPI.deleteFoldersRemote(allSelectedUrls);
             if (!res.ok) {
-                const bad = (res.results || []).filter(r => !r.ok).map(r => `${r.url} (${r.status || r.error})`);
+                const bad = (res.results || [])
+                    .filter((r) => !r.ok)
+                    .map((r) => `${r.url} (${r.status || r.error})`);
                 alert('Некоторые не удалены:\n' + bad.join('\n'));
             } else {
                 alert('✅ Все выбранные папки удалены');
@@ -100,15 +116,18 @@ export default function GetAllImages({
             alert('Ошибка удаления: ' + e.message);
         } finally {
             setBusyDelete(false);
+            clearBusy();
         }
     };
 
     // -------------------- download single image --------------------
     const downloadOne = async (img) => {
         try {
+            setBusyText('Сохраняю изображение…');
             if (window.electronAPI?.saveImage) {
-                await window.electronAPI.saveImage(img.url, img.name);
+                await window.electronAPI.saveImage(img.url, img.name); // внутри вероятно тоже покажет диалог
             } else {
+                // браузерный фоллбек
                 const res = await fetch(img.url);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const blob = await res.blob();
@@ -121,10 +140,15 @@ export default function GetAllImages({
                 a.remove();
                 URL.revokeObjectURL(href);
             }
+            clearBusy();
+            alert('✅ Saved');
         } catch (e) {
+            clearBusy();
             alert(`❌ ${e.message}`);
         }
     };
+
+    const isAnyBusy = busy.active || busyDelete;
 
     // ============================================================== //
     //                       RENDER                                   //
@@ -133,15 +157,36 @@ export default function GetAllImages({
     // ---------- если открыт конкретный folder ----------
     if (currentFolder) {
         return (
-            <div className={s.wrap}>
+            <div className={s.wrap} aria-busy={isAnyBusy}>
+                {isAnyBusy && (
+                    <div className={s.backdrop} role="alert" aria-live="polite">
+                        <div className={s.loader} aria-hidden />
+                        <div className={s.loaderText}>{busy.text || 'Выполняется…'}</div>
+                        <div className={s.loaderSub}>Если окно «Сохранить файл» не видно — проверьте панель задач.</div>
+                    </div>
+                )}
+
                 <div className={s.header}>
                     <div className={s.left}>
-                        <button className={s.btn} onClick={loadFolders}>← Back</button>
+                        <button className={s.btn} onClick={loadFolders} disabled={isAnyBusy}>
+                            ← Back
+                        </button>
                         <h3 className={s.title}>Photos in {currentFolder.name}</h3>
                     </div>
                     <div className={s.right}>
-                        <button className={s.btnPrimary} onClick={() => downloadZip(currentFolder)}>
-                            Download All as ZIP
+                        <button
+                            className={s.btnPrimary}
+                            onClick={() => downloadZip(currentFolder)}
+                            disabled={isAnyBusy}
+                        >
+                            {busy.active ? (
+                                <span className={s.btnSpinnerWrap}>
+                  <span className={s.btnSpinner} aria-hidden />
+                  <span>Preparing…</span>
+                </span>
+                            ) : (
+                                'Download All as ZIP'
+                            )}
                         </button>
                     </div>
                 </div>
@@ -156,8 +201,19 @@ export default function GetAllImages({
                                 <img src={img.url} alt={img.name} className={s.photoThumb} />
                             </a>
                             <div className={s.photoName}>{img.name}</div>
-                            <button className={s.downloadBtn} onClick={() => downloadOne(img)}>
-                                Download
+                            <button
+                                className={s.downloadBtn}
+                                onClick={() => downloadOne(img)}
+                                disabled={isAnyBusy}
+                            >
+                                {busy.active ? (
+                                    <span className={s.btnSpinnerWrap}>
+                    <span className={s.btnSpinner} aria-hidden />
+                    <span>Saving…</span>
+                  </span>
+                                ) : (
+                                    'Download'
+                                )}
                             </button>
                         </div>
                     ))}
@@ -171,27 +227,38 @@ export default function GetAllImages({
 
     // ---------- иначе отображаем список всех папок ----------
     return (
-        <div className={s.wrap}>
+        <div className={s.wrap} aria-busy={isAnyBusy}>
+            {isAnyBusy && (
+                <div className={s.backdrop} role="alert" aria-live="polite">
+                    <div className={s.loader} aria-hidden />
+                    <div className={s.loaderText}>{busy.text || 'Выполняется…'}</div>
+                    <div className={s.loaderSub}>Если окно «Сохранить файл» не видно — проверьте панель задач.</div>
+                </div>
+            )}
+
             <div className={s.header}>
                 <div className={s.left}>
-                    {/*<h3 className={s.title}>Folders at {baseUrl}</h3>*/}
                     <div className={s.controls}>
                         <input
                             className={s.input}
                             placeholder="Search folders…"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
+                            disabled={isAnyBusy}
                         />
-                        <button className={s.btn} onClick={loadFolders} disabled={loading}>
+                        <button className={s.btn} onClick={loadFolders} disabled={loading || isAnyBusy}>
                             {loading ? 'Refreshing…' : 'Refresh'}
                         </button>
                         {allSelectedUrls.length > 0 && (
-                            <button
-                                className={s.btnDanger}
-                                onClick={deleteSelected}
-                                disabled={busyDelete}
-                            >
-                                {busyDelete ? 'deleting..' : `delete (${allSelectedUrls.length})`}
+                            <button className={s.btnDanger} onClick={deleteSelected} disabled={busyDelete || busy.active}>
+                                {busyDelete ? (
+                                    <span className={s.btnSpinnerWrap}>
+                    <span className={s.btnSpinner} aria-hidden />
+                    <span>deleting…</span>
+                  </span>
+                                ) : (
+                                    `delete (${allSelectedUrls.length})`
+                                )}
                             </button>
                         )}
                     </div>
@@ -206,22 +273,22 @@ export default function GetAllImages({
                         key={f.url}
                         className={`${s.folder} ${selected[f.url] ? s.selected : ''}`}
                         title={f.url}
-                        onClick={() => loadImages(f)}
+                        onClick={() => !isAnyBusy && loadImages(f)}
+                        aria-disabled={isAnyBusy}
                     >
                         <div className={s.checkbox} onClick={(e) => e.stopPropagation()}>
                             <input
                                 type="checkbox"
                                 checked={!!selected[f.url]}
                                 onChange={() => toggleSelect(f.url)}
+                                disabled={isAnyBusy}
                             />
                         </div>
                         <span className={s.icon} aria-hidden></span>
                         <span className={s.name}>{f.name}</span>
                     </div>
                 ))}
-                {!loading && !err && filteredFolders.length === 0 && (
-                    <div className={s.empty}>No folders</div>
-                )}
+                {!loading && !err && filteredFolders.length === 0 && <div className={s.empty}>No folders</div>}
             </div>
         </div>
     );

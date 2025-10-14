@@ -1,7 +1,7 @@
 // src/components/FolderList.js
 import { useEffect, useState } from 'react';
 
-export default function FolderList({ baseUrl = 'http://192.168.27.34:8000' }) {
+export default function FolderList({ baseUrl = 'http://192.168.4.1:8000' }) {
     const [folders, setFolders] = useState([]);
     const [selected, setSelected] = useState({});
     const [busy, setBusy] = useState(false);
