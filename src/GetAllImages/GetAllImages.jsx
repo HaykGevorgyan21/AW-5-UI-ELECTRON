@@ -33,7 +33,7 @@ export default function GetAllImages({
             setCurrentFolder(null);
             setSelected({});
         } catch (e) {
-            setErr(e.message || String(e));
+            setErr(' please check the availability of the wifi network or restart the device', String(e))
         } finally {
             setLoading(false);
         }
