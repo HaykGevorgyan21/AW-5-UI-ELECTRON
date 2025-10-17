@@ -30,7 +30,7 @@ export default function GetAllImages({
             setImages([]); setCurrentFolder(null);
             setSelected({}); setSelectedPhotos({});
         } catch (e) {
-            setErr('Please check the Wi-Fi device or restart it. ' + String(e?.message || e));
+            setErr('Please check the Wi-Fi device or restart it. (Please connect the Wi-Fi PiZeroHotspot)');
         } finally { setLoading(false); }
     };
 
@@ -43,7 +43,7 @@ export default function GetAllImages({
             setCurrentFolder(folder);
             setSelectedPhotos({}); // сбрасываем выбор при входе в папку
         } catch (e) {
-            setErr(e.message || String(e));
+            setErr('Please check the Wi-Fi device or restart it. (Please connect the Wi-Fi PiZeroHotspot)');
         } finally { setLoading(false); }
     };
 
