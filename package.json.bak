@@ -1,0 +1,87 @@
+{
+  "name": "aw5-ui",
+  "version": "1.0.0",
+  "private": true,
+  "description": "React + Electron desktop application",
+  "author": "Air Worker",
+  "license": "MIT",
+  "main": "electron/main.js",
+  "homepage": ".",
+  "scripts": {
+    "react:start": "react-scripts start",
+    "electron:start": "wait-on http://localhost:3000 && electron ./electron/main.js",
+    "dev": "concurrently -k -n react,electron -c green,cyan \"npm:react:start\" \"npm:electron:start\"",
+    "build:react": "react-scripts build",
+    "build": "npm run build:react",
+    "package": "npm run build:react && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --dir",
+    "dist": "npm run build:react && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win nsis --x64"
+  },
+  "dependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^13.5.0",
+    "cheerio": "^1.1.2",
+    "exiftool-vendored": "^31.1.0",
+    "jszip": "^3.10.1",
+    "node-fetch": "^2.7.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-scripts": "5.0.1",
+    "sass": "^1.93.2",
+    "web-vitals": "^2.1.4"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "cross-env": "^10.1.0",
+    "electron": "^30.5.1",
+    "electron-builder": "^26.0.12",
+    "electron-icon-maker": "^0.0.5",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "png-to-ico": "^3.0.1",
+    "wait-on": "^7.2.0"
+  },
+  "eslintConfig": {
+    "extends": ["react-app", "react-app/jest"],
+    "plugins": ["react-hooks"],
+    "rules": {
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn"
+    }
+  },
+  "build": {
+    "appId": "com.airworker.aw5ui",
+    "productName": "AW-v1.0",
+    "asar": true,
+    "files": [
+      "build/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "electron/assets",
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "electron/assets/app.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "electron/assets/app.ico",
+      "uninstallerIcon": "electron/assets/app.ico",
+      "uninstallDisplayName": "AW-v1.0 Uninstaller",
+      "license": "LICENSE.md",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AW-5 UI"
+    }
+  }
+}

@@ -474,5 +474,29 @@
   border-top-color: #fff;
   animation: spin .9s linear infinite;
 }
+/* чекбокс всегда видимый на карточке фото */
+.photoItem {
+  position: relative;
+}
+
+.checkboxAlways {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: block;
+  opacity: 1;           /* всегда видно */
+  pointer-events: auto; /* кликабельно */
+  z-index: 2;
+
+  input {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* если ранее чекбокс на фото прятался, убери ховер-логику типа
+   .photoItem:hover .checkbox { opacity: 1 } и т.п. */
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+
