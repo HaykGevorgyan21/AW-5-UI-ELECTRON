@@ -262,16 +262,33 @@ ipcMain.handle('list-folders', async (_evt, baseUrl) => {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const html = await res.text();
     const $ = cheerio.load(html);
+
     const folders = [];
     $('a[href]').each((_, a) => {
         const href = $(a).attr('href') || '';
         if (href.endsWith('/') && !href.startsWith('../')) {
-            folders.push({ name: decodeURIComponent(href.replace(/\/$/, '')), url: new URL(href, url).toString() });
+            const name = decodeURIComponent(href.replace(/\/$/, ''));
+
+            // 🔥 пропускаем сразу все "logs", "log", ".git", "_cache" и т.д.
+            if (
+                /^(log|logs)$/i.test(name) ||
+                name.startsWith('.') ||
+                name.startsWith('_')
+            ) {
+                return; // просто не добавляем в список
+            }
+
+            folders.push({ name, url: new URL(href, url).toString() });
         }
     });
-    folders.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+    folders.sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { numeric: true })
+    );
+
     return folders;
 });
+
 
 // list images in folder
 ipcMain.handle('list-images', async (_evt, folderUrl) => listImagesOfFolder(folderUrl));

@@ -178,6 +178,7 @@
   height: 130px;
   object-fit: cover;
   background: #f8fafc;
+
 }
 .photoName {
   padding: 6px;
@@ -408,7 +409,8 @@
 
 .photoName {
   margin-top: 6px;
-  font-size: 0.8rem;
+  font-size: 1rem;
+  color: white;
 }
 
 .downloadBtn {
@@ -474,28 +476,66 @@
   border-top-color: #fff;
   animation: spin .9s linear infinite;
 }
-/* чекбокс всегда видимый на карточке фото */
+
+
+
+/* карточка фото — один-единственный блок стилей */
 .photoItem {
-  position: relative;
+  position: relative;          /* <<< ВАЖНО: якорь для абсолютного чекбокса */
+  background: #141a2b;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  border: 1px solid #1f2937;
+  transition: box-shadow .1s ease, transform .1s ease;
 }
 
-.checkboxAlways {
+.photoItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+
+/* превью */
+.photoThumb {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #f8fafc;
+  display: block;              /* чтобы вся картинка была кликабельной */
+}
+
+/* чекбокс всегда сверху в левом углу */
+.checkbox {
   position: absolute;
   top: 6px;
   left: 6px;
-  display: block;
-  opacity: 1;           /* всегда видно */
-  pointer-events: auto; /* кликабельно */
-  z-index: 2;
+  z-index: 20;                 /* <<< поверх превью/ссылки */
+  background: rgba(0,0,0,.25); /* по желанию, для контраста */
+  border-radius: 4px;
+  padding: 2px;
 
   input {
     width: 18px;
     height: 18px;
+    cursor: pointer;
   }
 }
 
-/* если ранее чекбокс на фото прятался, убери ховер-логику типа
-   .photoItem:hover .checkbox { opacity: 1 } и т.п. */
+.photoItem {
+  position: relative;
+  background: #141a2b;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  border: 2px solid transparent;
+  transition: box-shadow 0.1s ease, transform 0.1s ease, border-color 0.15s ease;
+}
+
+.photoItem.selected {
+  border-color: #0b84ff; /* твой синий цвет при выборе */
+  box-shadow: 0 0 8px rgba(11, 132, 255, 0.5); /* лёгкое свечение — по желанию */
+}
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
